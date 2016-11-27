@@ -4,6 +4,8 @@ from environment import Agent, Environment
 from planner import RoutePlanner
 from simulator import Simulator
 
+
+
 class LearningAgent(Agent):
     """ An agent that learns to drive in the Smartcab world.
         This is the object you will be modifying. """ 
@@ -25,6 +27,17 @@ class LearningAgent(Agent):
         # Set any additional class parameters as needed
 
         self.trials = 0
+    
+    
+    
+    def logistic_inv(self, x, x0=90, L=1, k=0.3):
+        """ This is an inverted logistic function.
+            x0, is the sigmoid's midpoint
+            L, is the sigmoid's max value
+            k is the steepness of the transition
+        """
+
+        return 1 - (L / (1 + pow(math.e, -1 * k * (x-x0))))
 
     def reset(self, destination=None, testing=False):
         """ The reset function is called at the beginning of each trial.
@@ -46,10 +59,17 @@ class LearningAgent(Agent):
             self.alpha = 0.0
             self.epsilon = 0.0
         else:
-            #self.epsilon = self.epsilon - 0.05
+            #self.epsilon = self.epsilon - ((1.0-0.95) / 200)
+            #self.epsilon = self.epsilon - (0.025/2)
             #self.epsilon = (pow(self.alpha, self.trials))
-            #self.epsilon = (1 / (pow(self.trials, 2)))
-            self.epsilon = (pow(math.e, -1 * self.alpha * self.trials))
+            #self.epsilon = self.epsilon * (1.0 / ((pow(self.trials, 2))) + 0.2)
+            #self.epsilon = self.epsilon * ((pow(math.e, -0.3 * self.trials)) )
+            #self.epsilon = self.epsilon * math.cos(0.075*self.trials)
+ 
+            self.epsilon = self.logistic_inv(self.trials, x0=200, k=0.1) * 0.75
+
+              
+            
 
         return None
 
@@ -64,9 +84,6 @@ class LearningAgent(Agent):
         inputs = self.env.sense(self)           # Visual input - intersection light and traffic
         deadline = self.env.get_deadline(self)  # Remaining deadline
 
-        location = self.env.agent_states[self]['location']
-        heading = self.env.agent_states[self]['heading']
-
         ########### 
         ## DONE  ##
         ###########
@@ -76,11 +93,12 @@ class LearningAgent(Agent):
         #   For each action, set the Q-value for the state-action pair to 0
         
         #state = (waypoint, inputs["light"], inputs["oncoming"], inputs["left"], inputs["right"])
-        state = (inputs["light"], inputs["oncoming"])
+        state = (waypoint, inputs["light"], inputs["oncoming"], inputs["left"])
 
         self.createQ(state)
 
         return state
+
 
     def get_maxQ(self, state):
         """ The get_maxQ function is called when the agent is asked to find the
@@ -218,7 +236,7 @@ def run():
     #   learning   - set to True to force the driving agent to use Q-learning
     #    * epsilon - continuous value for the exploration factor, default is 1
     #    * alpha   - continuous value for the learning rate, default is 0.5
-    agent = env.create_agent(LearningAgent, learning=True, alpha=0.8, epsilon=1)
+    agent = env.create_agent(LearningAgent, learning=True, alpha=0.6, epsilon=1.0)
     
     ##############
     # Follow the driving agent
@@ -240,7 +258,7 @@ def run():
     # Flags:
     #   tolerance  - epsilon tolerance before beginning testing, default is 0.05 
     #   n_test     - discrete number of testing trials to perform, default is 0
-    sim.run(n_test=200, tolerance=0.001)
+    sim.run(n_test=20, tolerance=0.05)
 
 
 if __name__ == '__main__':
