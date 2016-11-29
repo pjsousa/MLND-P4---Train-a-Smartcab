@@ -22,13 +22,22 @@ class LearningAgent(Agent):
         self.alpha = alpha       # Learning factor
 
         ###########
-        ## DONE? ##
+        ## DONE  ##
         ###########
         # Set any additional class parameters as needed
 
         self.trials = 0
     
-    
+    def logistic(self, x, x0=90, L=1, k=0.3):
+        """ This is an inverted logistic function.
+            x0, is the sigmoid's midpoint
+            L, is the sigmoid's max value
+            k is the steepness of the transition
+        """
+
+        return L / (1 + pow(math.e, -1 * k * (x-x0)))
+
+
     
     def logistic_inv(self, x, x0=90, L=1, k=0.3):
         """ This is an inverted logistic function.
@@ -37,7 +46,7 @@ class LearningAgent(Agent):
             k is the steepness of the transition
         """
 
-        return 1 - (L / (1 + pow(math.e, -1 * k * (x-x0))))
+        return 1 - self.logistic(x, x0, L, k)
 
     def reset(self, destination=None, testing=False):
         """ The reset function is called at the beginning of each trial.
@@ -59,17 +68,10 @@ class LearningAgent(Agent):
             self.alpha = 0.0
             self.epsilon = 0.0
         else:
-            #self.epsilon = self.epsilon - ((1.0-0.95) / 200)
-            #self.epsilon = self.epsilon - (0.025/2)
-            #self.epsilon = (pow(self.alpha, self.trials))
-            #self.epsilon = self.epsilon * (1.0 / ((pow(self.trials, 2))) + 0.2)
-            #self.epsilon = self.epsilon * ((pow(math.e, -0.3 * self.trials)) )
-            #self.epsilon = self.epsilon * math.cos(0.075*self.trials)
- 
-            self.epsilon = self.logistic_inv(self.trials, x0=200, k=0.1) * 0.75
-
-              
-            
+            #self.epsilon = self.epsilon * math.cos(0.065*self.trials) # This was the better cosine decay that I found
+            #self.epsilon = self.logistic_inv(self.trials, L=0.4999, k=0.5, x0=9) - 0.4999 # This was a sigmoid almost cosine-alike in which I iterated over
+            self.epsilon = self.logistic_inv(self.trials, L=1.0, k=0.85, x0=35)
+            self.alpha = self.logistic(self.trials, L=0.499, k=20, x0=35) + 0.001
 
         return None
 
@@ -92,9 +94,9 @@ class LearningAgent(Agent):
         #   If it is not, create a dictionary in the Q-table for the current 'state'
         #   For each action, set the Q-value for the state-action pair to 0
         
-        #state = (waypoint, inputs["light"], inputs["oncoming"], inputs["left"], inputs["right"])
-        state = (waypoint, inputs["light"], inputs["oncoming"], inputs["left"])
+        state = (waypoint, inputs["light"], inputs["oncoming"], inputs['left'])
 
+        
         self.createQ(state)
 
         return state
@@ -228,7 +230,7 @@ def run():
     #   verbose     - set to True to display additional output from the simulation
     #   num_dummies - discrete number of dummy agents in the environment, default is 100
     #   grid_size   - discrete number of intersections (columns, rows), default is (8, 6)
-    env = Environment()
+    env = Environment(verbose=False)
     
     ##############
     # Create the driving agent
@@ -236,7 +238,7 @@ def run():
     #   learning   - set to True to force the driving agent to use Q-learning
     #    * epsilon - continuous value for the exploration factor, default is 1
     #    * alpha   - continuous value for the learning rate, default is 0.5
-    agent = env.create_agent(LearningAgent, learning=True, alpha=0.6, epsilon=1.0)
+    agent = env.create_agent(LearningAgent, learning=True, alpha=0.5, epsilon=0.5)
     
     ##############
     # Follow the driving agent
@@ -258,8 +260,9 @@ def run():
     # Flags:
     #   tolerance  - epsilon tolerance before beginning testing, default is 0.05 
     #   n_test     - discrete number of testing trials to perform, default is 0
-    sim.run(n_test=20, tolerance=0.05)
+    sim.run(n_test=50, tolerance=0.00001)
 
 
 if __name__ == '__main__':
     run()
+
