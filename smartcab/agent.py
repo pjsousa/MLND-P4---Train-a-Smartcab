@@ -34,8 +34,17 @@ class LearningAgent(Agent):
             L, is the sigmoid's max value
             k is the steepness of the transition
         """
-
-        return L / (1 + pow(math.e, -1 * k * (x-x0)))
+        _r = None
+        
+        try:
+            _r = L / (1 + pow(math.e, -1 * k * (x-x0)))
+        except:
+            if x < x0:
+                _r = 0
+            else:
+                _r = L
+        
+        return _r
 
 
     
@@ -70,8 +79,8 @@ class LearningAgent(Agent):
         else:
             #self.epsilon = self.epsilon * math.cos(0.065*self.trials) # This was the better cosine decay that I found
             #self.epsilon = self.logistic_inv(self.trials, L=0.4999, k=0.5, x0=9) - 0.4999 # This was a sigmoid almost cosine-alike in which I iterated over
-            self.epsilon = self.logistic_inv(self.trials, L=1.0, k=0.85, x0=35)
-            self.alpha = self.logistic(self.trials, L=0.499, k=20, x0=35) + 0.001
+            self.epsilon = self.logistic_inv(self.trials, L=1.0, k=0.85, x0=200)
+            self.alpha = self.logistic(self.trials, L=0.499, k=20, x0=200) + 0.001
 
         return None
 
@@ -127,16 +136,18 @@ class LearningAgent(Agent):
         """ The get_argmaxQ function is called when the agent is asked to find an
             action with the maximum Q-value of all actions based on the 'state' the smartcab is in. """
 
-        argmaxQ = None
+        argmaxQ = []
+        argmax_idx = 0
         maxQ = self.get_maxQ(state)
 
         if state in self.Q:
             for itr_action in self.valid_actions:
                 if self.Q[state][itr_action] == maxQ:
-                    argmaxQ = itr_action
-                    break
+                    argmaxQ.append(itr_action)
         
-        return argmaxQ
+            argmax_idx = int(math.floor(random.uniform(0, len(argmaxQ))))
+            
+        return argmaxQ[argmax_idx]
 
 
     def createQ(self, state):
@@ -201,7 +212,9 @@ class LearningAgent(Agent):
         #   Use only the learning rate 'alpha' (do not use the discount factor 'gamma')
         if self.learning:
             state_prime = self.build_state()
-            self.Q[state][action] = ((1 - self.alpha) * self.Q[state][action]) + (self.alpha * ( reward +  self.get_maxQ(state_prime)))
+            
+            self.Q[state][action] = ((1 - self.alpha) * self.Q[state][action]) + (self.alpha * reward)
+
 
         return
 

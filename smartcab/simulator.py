@@ -237,7 +237,7 @@ class Simulator(object):
                 for state in a.Q:
                     f.write("{}\n".format(state))
                     for action, reward in a.Q[state].iteritems():
-                        f.write(" -- {} : {:.2f}\n".format(action, reward))
+                        f.write(" -- {} : {:.5f}\n".format(action, reward))
                     f.write("\n")  
                 self.table_file.close()
 
